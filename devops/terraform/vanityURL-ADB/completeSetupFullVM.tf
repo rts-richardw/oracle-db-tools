@@ -454,7 +454,7 @@ resource "null_resource" "file" {
 
     provisioner "file" {
         source      = "wallet.zip"
-        destination = "/tmp/wallet.zip"
+        destination = "/opt/oracle/ords/wallet.zip"
   }
 
     provisioner "remote-exec" {
@@ -473,9 +473,10 @@ resource "null_resource" "file" {
         "sudo su - oracle -c 'unzip -q /opt/oracle/ords/ords_conf.zip -d /opt/oracle/ords/'",
         "sudo su - oracle -c 'sed -i 's/PASSWORD_HERE/${random_string.password.result}/g' /opt/oracle/ords/conf/ords/create_user.sql'",
         "sudo su - oracle -c 'sed -i 's/PASSWORD_HERE/${random_string.password.result}/g' /opt/oracle/ords/conf/ords/conf/apex_pu.xml'",        
+        "sudo su - oracle -c 'sed -i 's/DATABASE_HERE/${var.database_name}_high/g' /opt/oracle/ords/conf/ords/conf/apex_pu.xml'",        
         "sudo su - oracle -c 'java -jar /opt/oracle/ords/ords.war configdir /opt/oracle/ords/conf'",
         "sudo su - oracle -c 'mkdir -p /opt/oracle/ords/conf/ords/standalone/doc_root/.well-known/acme-challenge'",
-        "sudo su - oracle -c 'sql -cloudconfig /tmp/wallet.zip admin/${var.admin_password}@${var.database_name}_high @/opt/oracle/ords/conf/ords/create_user.sql'",
+        "sudo su - oracle -c 'sql -cloudconfig /opt/oracle/ords/wallet.zip admin/${var.admin_password}@${var.database_name}_high @/opt/oracle/ords/conf/ords/create_user.sql'",
         "sudo su - oracle -c 'java -jar -Duser.timezone=UTC /opt/oracle/ords/ords.war standalone &'",
         "sudo su - oracle -c 'sleep 210s'",        
         ]
