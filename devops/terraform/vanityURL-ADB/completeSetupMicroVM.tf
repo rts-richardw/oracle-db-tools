@@ -242,6 +242,7 @@ resource "oci_core_instance" "ords_compute_instance" {
     # Required
     availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
     compartment_id = oci_identity_compartment.tf-compartment.id
+    count = var.number_of_midtiers
     shape = "VM.Standard.E2.1.Micro"
     source_details {
         source_id = "ocid1.image.oc1.eu-frankfurt-1.aaaaaaaaf6gm7xvn7rhll36kwlotl4chm25ykgsje7zt2b4w6gae4yqfdfwa"
@@ -249,7 +250,7 @@ resource "oci_core_instance" "ords_compute_instance" {
     }
 
     # Optional
-    display_name = "ORDS1"
+    display_name = "ORDS${count.index}"
     create_vnic_details {
         assign_public_ip = true
         subnet_id = oci_core_subnet.vcn-public-subnet.id
@@ -259,26 +260,6 @@ resource "oci_core_instance" "ords_compute_instance" {
         block_storage_sizes_in_gbs = "20"
     } 
     preserve_boot_volume = false
-}
-
-# Create a volume
-
-resource "oci_core_volume" "ords_volume" {
-
-    availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
-    compartment_id = oci_identity_compartment.tf-compartment.id
-    display_name = "ords_volume"
-    size_in_gbs = "50"
-}
-
-# Attach the volume
-
-resource "oci_core_volume_attachment" "attach_volume" {
-
-    instance_id = oci_core_instance.ords_compute_instance.id
-    volume_id = oci_core_volume.ords_volume.id
-    attachment_type = "paravirtualized"
-
 }
 
 # Load Balancer
@@ -297,18 +278,18 @@ depends_on = [
 }
 
 resource "oci_load_balancer_backend" "vanity_backend" {
-
+    count = var.number_of_midtiers
     backendset_name = oci_load_balancer_backend_set.vanity_backend_set.name
-    ip_address = oci_core_instance.ords_compute_instance.private_ip
+    ip_address = oci_core_instance.ords_compute_instance[count.index].private_ip
     load_balancer_id = oci_load_balancer_load_balancer.vanity_load_balancer.id
     port = "8080"
 
 }
 
 resource "oci_load_balancer_backend" "vanity_backend_ssl" {
-
+    count = var.number_of_midtiers
     backendset_name = oci_load_balancer_backend_set.vanity_backend_set_ssl.name
-    ip_address = oci_core_instance.ords_compute_instance.private_ip
+    ip_address = oci_core_instance.ords_compute_instance[count.index].private_ip
     load_balancer_id = oci_load_balancer_load_balancer.vanity_load_balancer.id
     port = "443"
 
@@ -411,11 +392,13 @@ output "autonomous_data_warehouse_wallet_password" {
 
 resource "null_resource" "remote-exec" {
 
+        count = var.number_of_midtiers
+
         provisioner "remote-exec" {
         connection {
         agent       = false
         timeout     = "10m"
-        host        = oci_core_instance.ords_compute_instance.public_ip
+        host        = oci_core_instance.ords_compute_instance[count.index].public_ip
         user        = "opc"
         private_key = file("/path/to/your/private/keys")
         }
@@ -438,10 +421,12 @@ depends_on = [
 
 resource "null_resource" "file" {
 
+    count = var.number_of_midtiers
+
     connection {
             agent       = false
             timeout     = "10m"
-            host        = oci_core_instance.ords_compute_instance.public_ip
+            host        = oci_core_instance.ords_compute_instance[count.index].public_ip
             user        = "opc"
             private_key = file("/path/to/your/private/keys")
             }
@@ -455,7 +440,7 @@ resource "null_resource" "file" {
     connection {
             agent       = false
             timeout     = "10m"
-            host        = oci_core_instance.ords_compute_instance.public_ip
+            host        = oci_core_instance.ords_compute_instance[count.index].public_ip
             user        = "opc"
             private_key = file("/path/to/your/private/keys")
             }
@@ -487,10 +472,12 @@ depends_on = [
 
 resource "null_resource" "cert" {
 
+    count = var.number_of_midtiers
+
     connection {
             agent       = false
             timeout     = "10m"
-            host        = oci_core_instance.ords_compute_instance.public_ip
+            host        = oci_core_instance.ords_compute_instance[count.index].public_ip
             user        = "opc"
             private_key = file("/path/to/your/private/keys")
             }
@@ -500,7 +487,7 @@ resource "null_resource" "cert" {
     connection {
             agent       = false
             timeout     = "10m"
-            host        = oci_core_instance.ords_compute_instance.public_ip
+            host        = oci_core_instance.ords_compute_instance[count.index].public_ip
             user        = "opc"
             private_key = file("/path/to/your/private/keys")
             }

@@ -151,7 +151,7 @@ resource "oci_core_instance" "ords_compute_instance" {
     availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
     compartment_id = oci_identity_compartment.tf-compartment.id
     is_pv_encryption_in_transit_enabled = "true"
-
+    count = var.number_of_midtiers
 # Shape Section
 #
     shape = var.vm_shape
@@ -171,7 +171,7 @@ resource "oci_core_instance" "ords_compute_instance" {
     }
 
     # Optional
-    display_name = "ORDS1"
+    display_name = "ORDS${count.index}"
     create_vnic_details {
         assign_public_ip = true
         subnet_id = oci_core_subnet.vcn-public-subnet.id
@@ -188,11 +188,13 @@ resource "oci_core_instance" "ords_compute_instance" {
 
 resource "null_resource" "remote-exec" {
 
+        count = var.number_of_midtiers
+
         provisioner "remote-exec" {
         connection {
         agent       = false
         timeout     = "10m"
-        host        = oci_core_instance.ords_compute_instance.public_ip
+        host        = oci_core_instance.ords_compute_instance[count.index].public_ip
         user        = "opc"
         private_key = file("/path/to/your/private/keys")
         }
@@ -215,10 +217,12 @@ depends_on = [
 
 resource "null_resource" "file" {
 
+    count = var.number_of_midtiers
+
     connection {
             agent       = false
             timeout     = "10m"
-            host        = oci_core_instance.ords_compute_instance.public_ip
+            host        = oci_core_instance.ords_compute_instance[count.index].public_ip
             user        = "opc"
             private_key = file("/path/to/your/private/keys")
             }
@@ -232,7 +236,7 @@ resource "null_resource" "file" {
     connection {
             agent       = false
             timeout     = "10m"
-            host        = oci_core_instance.ords_compute_instance.public_ip
+            host        = oci_core_instance.ords_compute_instance[count.index].public_ip
             user        = "opc"
             private_key = file("/path/to/your/private/keys")
             }
